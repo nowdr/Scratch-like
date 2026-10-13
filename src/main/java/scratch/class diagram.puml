@@ -1,0 +1,582 @@
+@startuml
+
+skinparam linetype ortho
+
+package "scratch.model" {
+    abstract class Action {
+        # type : ActionType
+        - isValid : BooleanProperty
+        - displayText : StringProperty
+        + Action(type : ActionType)
+        + getType() : ActionType
+        + isValidProperty() = BooleanProperty
+        + displayTextProperty() : StringProperty
+        + save() : String
+        # resolveValue(String input, ActionContext actionContext) : int
+        + {abstract} execute(context : ActionContext) : void
+        + {abstract} copy() : Action
+        + {abstract} toString() : String
+    }
+
+    class ActionContext {
+        - cursor : Cursor
+        - variableManager : VariableManager
+        + ActionContext(cursor : Cursor, variableManager : VariableManager)
+        + getCursor() : Cursor
+        + getVariableManager() : VariableManager
+    }
+
+    class Actions {
+    - {static} actionsList : ObservableList<Action>
+    + {static} getActionsList() : ObservableList<Action>
+    + {static} builder(type : ActionType, param : String, param2 : String) : Action
+    }
+
+    enum ActionType {
+        MOVE_FORWARD
+        TURN_LEFT
+        TURN_RIGHT
+        PEN_UP
+        PEN_DOWN
+        COLOR
+        VAR_DECLARATION
+        VAR_ASSIGNMENT
+        INCREMENT_VARIABLE
+        REPEAT
+        END_REPEAT
+    }
+
+    class ChosenActions {
+        - chosenActionsList : ObservableList<Action>
+        + getChosenActionsList() : ObservableList<Action>
+        + get(index : int) : Action
+        + add(action : Action) : void
+        + add(index : int, action : Action) : void
+        + moveUp (index : int) : void
+        + moveDown (index : int) : void
+        + duplicate(action : Action) : void
+        + remove (index : int) : void
+        + clear() : void
+        + size() : int
+        + isEmpty() : boolean
+    }
+
+    class ColorAction {
+        - color : ObjectProperty<Color>
+        + ColorAction()
+        + ColorAction(color : Color)
+        + getColor() : Color
+        + setColor(color : Color) : void
+        + colorProperty() : ObjectProperty<Color>
+        - setupBinding() : void
+        + save(): String
+        + execute(actionContext : ActionContext) : void
+        + copy() : Action
+        + toString() : String
+    }
+
+    class CompositeAction {
+        # children : List<Action>
+        + CompositeAction(type : ActionType)
+        + getChildren() : List<Action>
+        + add(action : Action) : void
+        + remove(action : Action) : void
+    }
+
+    class Cursor {
+        - position : ObjectProperty<Point>
+        - angle : DoubleProperty
+        - penDown : BooleanProperty
+        - color : ObjectProperty<Color>
+        + positionProperty() : ObjectProperty<Point>
+        + angleProperty() : DoubleProperty
+        + setPenDown(penDown : boolean) : void
+        + penDownProperty() : BooleanProperty
+        + getColor() : Color
+        + setColor(color : Color) : void
+        + colorProperty() : ObjectProperty<Color>
+        + moveForward(distance : double) : void
+        + rotate(degrees : double) : void
+        + reset() : void
+    }
+
+    class EndRepeatAction {
+        + EndRepeatAction()
+        + execute(actionContext : ActionContext) : void
+        + copy() : Action
+        + toString() : String
+    }
+
+    static class ExecutionContext {
+        - actionList : List<Action>
+        - remainingCount : int
+        - index : int
+        + ExecutionContext(actionList : List<Action>, remainingCount : int)
+        + getActionList() :List<Action>
+        + getRemainingCount() : int
+        + setRemainingCount(remainingCount : int) : void
+        + getIndex() : int
+        + setIndex(index : int) : void
+        + getAction() : Action
+    }
+
+    class Executor {
+        - chosenActions : ChosenActions
+        - cursor : Cursor
+        - variableManager : VariableManager
+        - executionContextDeque : Deque<ExecutionContext>
+        - indexHashMap : HashMap<Action, Integer>
+        - timeline : Timeline
+        - validProgram : BooleanProperty
+        - executionFinished : BooleanProperty
+        - executionIndex : IntegerProperty
+        - executionSpeed : DoubleProperty
+        + Executor(chosenActions : ChosenActions, cursor : Cursor, variableManager : VariableManager)
+        + getProgramList() : ObservableList<Action>
+        + getFromProgram(index : int) : Action
+        + addToProgram(action : Action) : void
+        + addToProgram(index : int, action : Action) : void
+        + moveUpInProgram(index : int) : void
+        + moveDownInProgram(index : int) : void
+        + duplicateInProgram(action Action) : void
+        + removeFromProgram(index : int) : void
+        + clearProgram() : void
+        + programSize() : int
+        + isProgramEmpty() : boolean
+        + cursorPositionProperty : ObjectProperty<Point>
+        + cursorAngleProperty() : DoubleProperty
+        + cursorIsPenDownProperty() : BooleanProperty
+        + cursorColorProperty() : ObjectProperty<Color>
+        + getVariableManagerMap() : ObservableMap<String, Variable>
+        + getValidProgram() : boolean
+        + validProgramProperty() : BooleanProperty
+        + getExecutionFinished() : boolean
+        + executionFinishedProperty() : BooleanProperty
+        + getExecutionIndex() : int
+        + executionIndexProperty() : IntegerProperty
+        + executionSpeedProperty() : DoubleProperty
+        + setupTimeline() : void
+        + startAutomaticExecution() : void
+        + stopAutomaticExecution() : void
+        + step() : void
+        + reset() : void
+        - validateProgram() : boolean
+        - compileProgram() : List<Action>
+        - setupListeners() : void
+    }
+
+    class MoveAction {
+        - distance : StringProperty
+        + MoveAction()
+        + MoveAction(distance : String)
+        + getDistance() : String
+        + setDistance(distance : String) : void
+        - setupBindings() : void
+        + save() : String
+        + execute(actionContext : ActionContext) : void
+        + copy() : Action
+        + toString() : String
+    }
+
+    class PenAction {
+        - isDown : BooleanProperty
+        + PenAction(type : ActionType)
+        + getIsDown() : boolean
+        - setupBinding() : void
+        + execute(actionContext : ActionContext) : void
+        + copy() : Action
+        + toString() : String
+    }
+
+    class Point {
+        - x : double
+        - y : double
+        + Point(x : double, y : double)
+        + getX() : double
+        + getY() : double
+    }
+
+    class ProgramIO {
+    + {static} save(actions : List<Action>, file : File) : void
+    + {static} load(file : File) : List<Action>
+    }
+
+    class RepeatAction {
+        - count : StringProperty
+        + RepeatAction()
+        + RepeatAction(count : String)
+        + getCount() : String
+        + setCount() : void
+        - setupBindings() : void
+        + save() : void
+        + execute(actionContext : ActionContext) : void
+        + copy() : Action
+        + toString() : String
+    }
+
+    class RotateAction {
+        - angle : StringProperty
+        - isClockWise : boolean
+        + RotateAction(type : ActionType)
+        + RotateAction(type : ActionType, angle : String)
+        + getAngle() : String
+        + setAngle(angle : String) : void
+        + isClockWise() : boolean
+        - setupBindings() : void
+        + save() : void
+        + execute(actionContext : ActionContext) : void
+        + copy() : Action
+        + toString() : String
+    }
+
+    class Variable {
+        - name : StringProperty
+        - value : IntegerProperty
+        + Variable(name : StringProperty, value : IntegerProperty)
+        + nameProperty() : StringProperty
+        + getValue() : int
+        + setValue(value : int) : void
+        + valueProperty() : IntegerProperty
+    }
+
+    class VariableAssignmentAction {
+        - variableName : StringProperty
+        - variableValue : StringProperty
+        + VariableAssignmentAction()
+        + VariableAssignmentAction(variableName : String, variableValue : String)
+        + getVariableName() : String
+        + setVariableName(variableName : String) : void
+        + getVariableValue() : String
+        + setVariableValue(variableValue : String) : void
+        - setupBindings() : void
+        + save() : void
+        + execute(actionContext : ActionContext) : void
+        + copy() : Action
+        + toString() : String
+    }
+
+    class VariableDeclarationAction {
+        - variableName : StringProperty
+        + VariableDeclarationAction()
+        + VariableDeclarationAction(variableName : String)
+        + getVariableName() : String
+        + setVariableName(variableName : String) : void
+        - setupBindings() : void
+        + save() : void
+        + execute(actionContext : ActionContext) : void
+        + copy() : Action
+        + toString() : String
+    }
+
+    class VariableIncrementationAction {
+        - variableName : StringProperty
+        - step : StringProperty
+        + VariableIncrementationAction()
+        + VariableIncrementationAction(variableName : String, step : String)
+        + getVariableName() : String
+        + setVariableName(variableName : String) : void
+        + getStep() : String
+        + setStep(step : String) : void
+        - setupBindings() : void
+        + save() : void
+        + execute(actionContext : ActionContext) : void
+        + copy() : Action
+        + toString() : String
+    }
+
+    class VariableManager {
+        - variableObservableMap : ObservableMap<String, Variable>
+        + getVariableObservableMap() : ObservableMap<String, Variable>
+        + get(name : String) : Variable
+        + add(name : String) : void
+        + set(name : String, value : int) : void
+        + update(name : String, value : int) : void
+        + reset() : void
+    }
+}
+
+package "scratch.viewmodel" {
+    class CanvasViewModel {
+        - executor : Executor
+        - variableObservableList : ObservableList<Variable>
+        - cursorPosition : ObjectProperty<Point>
+        - cursorAngle : DoubleProperty
+        - cursorIsPenDown : BooleanProperty
+        - cursorColor : ObjectProperty<Color>
+        - isLoaded : BooleanProperty
+        - isAutomatic : BooleanProperty
+        - isRunning : BooleanProperty
+        + CanvasViewModel(executor : Executor)
+        + getExecutionIndex() : int
+        + getCursorPosition() : Point
+        + cursorPositionProperty : ObjectProperty<Point>
+        + getCursorAngle : double
+        + cursorAngleProperty() : DoubleProperty
+        + getCursorIsPenDown() : boolean
+        + getCursorColor() : Color
+        + getVariableObservableList : ObservableList<Variable>
+        + getIsLoaded() : boolean
+        + setIsLoaded(isLoaded : boolean) : void
+        + isAutomaticProperty() : BooleanProperty
+        + setIsRunning(isRunning : boolean) : void
+        + executionSpeedProperty() : DoubleProperty
+        + canUseLoadResetButton() : BooleanBinding
+        + canUseExecuteNextButton() : BooleanBinding
+        + canUseStopButton() : BooleanBinding
+        + loadResetButtonTextBinding() : StringBinding
+        + executeNextButtonTextBinding() : StringBinding
+        + startAutomaticExecution() : void
+        + stopAutomaticExecution() : void
+        + step() : void
+        + reset() : void
+        - setupBindings() : void
+        - setupListeners() : void
+    }
+
+    class ListsViewModel {
+        - executor : Executor
+        - selectedPaletteAction : ObjectProperty<Action>
+        - selectedProgramIndex : IntegerProperty
+        - actionForEditor : ObjectProperty<Action>
+        + ListsViewModel(executor : Executor))
+        + selectedPaletteActionProperty() : ObjectProperty<Action>
+        + getSelectedProgramIndex() : int
+        + setSelectedProgramIndex(selectedProgramIndex : int) : void
+        + selectedProgramIndexProperty() : IntegerProperty
+        + setActionForEditor(action : Action) : void
+        + actionForEditorProperty() : ObjectProperty<Action>
+        + executionIndexProperty() : IntegerProperty
+        + getPaletteList() : ObservableList<Action>
+        + getProgramList() : ObservableList<Action>
+        + addToProgram() : void
+        + moveUp() : void
+        + moveDown() : void
+        + duplicate() : void
+        + remove() : void
+        + clear() : void
+        + canAdd() : BooleanBinding
+        + canMoveUp() : BooleanBinding
+        + canMoveDown() : BooleanBinding
+        + canRemove() : BooleanBinding
+        + canClear() : BooleanBinding
+        + saveProgram(file File) : void
+        + loadProgram(file File) : void
+    }
+}
+
+package "scratch.view" {
+    abstract class ActionEditor {
+        # hBox : HBox
+        + ActionEditor()
+        + {abstract} setupEditor() : void
+    }
+
+    class ActionEditorFactory {
+        + {static} createEditor(action : Action) : Node
+    }
+
+    class ActionFormatCell {
+        - circle : Circle
+        - isEditable : boolean
+        - ActionFormatCell(isEditable : boolean)
+        # updateItem(item : Action, empty : boolean) : void
+        - computeIndentLevel(index : int, items : ObservableList<Action>) : int
+    }
+
+    class CanvasView {
+        - canvasViewModel : CanvasViewModel
+        - canvas : Canvas
+        - graphicsContext : GraphicsContext
+        - cursor : Group
+        - stackPane : StackPane
+        - cursorState : Label
+        - automaticExecutionButton : RadioButton
+        - manualExecutionButton : RadioButton
+        - loadResetButton : Button
+        - executeNextButton : Button
+        - stopButton : Button
+        - slider : Slider
+        + CanvasView(canvasViewModel : CanvasViewModel)
+        - drawBorder(graphicsContext : GraphicsContext) : void
+        - drawGrid(graphicsContext : GraphicsContext) : void
+        - drawCursor() : void
+        - setupLayout() : void
+        - setupBindings() : void
+        - setupHandlers() : void
+        - setupListeners() : void
+    }
+
+    class ColorActionEditor {
+        - colorAction : ColorAction
+        - colorPicker : ColorPicker
+        + ColorActionEditor(action : ColorAction)
+        + setupEditor() : void
+        - setupBinding() : void
+    }
+
+    class ListsView {
+        - listsViewModel : ListsViewModel
+        - paletteList : ListView<Action>
+        - programList : ListView<Action>
+        - addButton : Button
+        - moveUpButton : Button
+        - moveDownButton : Button
+        - duplicateButton : Button
+        - removeButton : Button
+        - clearButton : Button
+        - editorContainer : VBox
+        - editorTiltedPane : TiltedPane
+        + ListsView(listsViewModel : ListsViewModel)
+        - initializeLists() : void
+        - setupLayout() : void
+        - setupBindings() : void
+        - setupHandlers() : void
+        - setupListeners() : void
+    }
+
+    class MainView {
+        - listsViewModel : ListsViewModel
+        - canvasViewModel : CanvasViewModel
+        - loadMenuItem : MenuItem
+        - saveMenuItem : MenuItem
+        + MainView(listsViewModel : ListsViewModel, canvasViewModel : CanvasViewModel)
+        - setupLayout : void
+        - setupBindings : void
+        - showError(title : String, message : String) : void
+    }
+
+    class MoveActionEditor {
+        - moveAction : MoveAction
+        - valueField : ValueField
+        - errorLabel : Label
+        + MoveActionEditor(action : MoveAction)
+        + setupEditor() : void
+        - setupBindings() : void
+        - setupListener() : void
+    }
+
+    class RepeatActionEditor {
+        - repeatAction : RepeatAction
+        - valueField : ValueField
+        - errorLabel : Label
+        + RepeatActionEditor(action : RepeatAction)
+        + setupEditor() : void
+        - setupBindings() : void
+        - setupListener() : void
+    }
+
+    class RotateActionEditor {
+        - rotateAction : RotateAction
+        - valueField : ValueField
+        - errorLabel : Label
+        + RotateActionEditor(action : RotateAction)
+        + setupEditor() : void
+        - setupBindings() : void
+        - setupListener() : void
+    }
+
+    class ValueField {
+        - minusButton : Button
+        - valueField : TextField
+        - plusButton : Button
+        - isInteger : BooleanProperty
+        + ValueField()
+        + setText(string : String
+        + textProperty() : StringProperty
+        - setupLayout() : void
+        - setupBindings() : void
+        - setupHandlers() : void
+        - setupListener() : void
+    }
+
+    class VariableAssignmentActionEditor {
+        - variableAssignmentAction : VariableAssignmentAction
+        - variableNameField : TextField
+        - valueField : ValueField
+        - errorLabel : Label
+        + VariableAssignmentActionEditor(action : VariableAssignmentAction)
+        + setupEditor() : void
+        - setupBindings() : void
+        - setupListeners() : void
+    }
+
+    class VariableDeclarationActionEditor {
+        - variableDeclarationAction : VariableDeclarationAction
+        - variableNameField : TextField
+        - errorLabel : Label
+        + VariableDeclarationActionEditor(action : VariableDeclarationAction)
+        + setupEditor() : void
+        - setupBindings() : void
+        - setupListener() : void
+    }
+
+    class VariableIncrementationActionEditor {
+        - variableIncrementationAction : VariableIncrementationAction
+        - variableNameField : TextField
+        - valueField : ValueField
+        - errorLabel : Label
+        + VariableIncrementationActionEditor(action : VariableIncrementationAction)
+        + setupEditor() : void
+        - setupBindings() : void
+        - setupListeners() : void
+    }
+}
+
+    ColorAction --|> Action
+    EndRepeatAction --|> Action
+    MoveAction --|> Action
+    PenAction --|> Action
+    RotateAction --|> Action
+    VariableAssignmentAction --|> Action
+    VariableDeclarationAction --|> Action
+    VariableIncrementationAction --|> Action
+    CompositeAction --|> Action
+    RepeatAction --|> CompositeAction
+    Executor *-- ChosenActions
+    Executor *-- Cursor
+    Executor *-- VariableManager
+    ChosenActions o-- Action
+    Actions o-- Action
+    VariableManager *-- Variable
+    ActionContext o-- Cursor
+    ActionContext o-- VariableManager
+    CompositeAction *-- Action
+    Cursor *-- Point
+    Action ..> ActionContext
+    Action ..> ActionType
+    Executor +-- ExecutionContext
+
+    CanvasViewModel o-- Executor
+    ListsViewModel o-- Executor
+    ListsViewModel ..> ProgramIO
+
+    ColorActionEditor --|> ActionEditor
+    MoveActionEditor --|> ActionEditor
+    RepeatActionEditor --|> ActionEditor
+    RotateActionEditor --|> ActionEditor
+    VariableAssignmentActionEditor --|> ActionEditor
+    VariableDeclarationActionEditor --|> ActionEditor
+    VariableIncrementationActionEditor --|> ActionEditor
+    MainView *-- CanvasView
+    MainView *-- ListsView
+    ListsView *-- ActionEditor
+    ActionEditor o-- ValueField
+    ListsView ..> ActionEditorFactory
+    ListsView +-- ActionFormatCell
+
+    CanvasViewModel ..> Point
+
+    CanvasView o-- CanvasViewModel
+    ListsView o-- ListsViewModel
+    MainView ..> CanvasViewModel
+    MainView ..> ListsViewModel
+
+    ColorActionEditor o-- ColorAction
+    MoveActionEditor o-- MoveAction
+    RepeatActionEditor o-- RepeatAction
+    RotateActionEditor o-- RotateAction
+    VariableAssignmentActionEditor o-- VariableAssignmentAction
+    VariableDeclarationActionEditor o-- VariableDeclarationAction
+    VariableIncrementationActionEditor o-- VariableIncrementationAction
+
+@enduml
